@@ -1,0 +1,14 @@
+# GlitchTip to Feishu Webhook Relay Configuration
+
+server_port = 8080
+
+[[feishu_webhooks]]
+name = "main_feishu"
+url = "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_URL_HERE"
+enabled = true
+# secret = "your_secret_here"  # Optional: for signature verification
+
+[[feishu_webhooks]]
+name = "backup_feishu"
+url = "https://open.feishu.cn/open-apis/bot/v2/hook/BACKUP_WEBHOOK_URL_HERE"
+enabled = false

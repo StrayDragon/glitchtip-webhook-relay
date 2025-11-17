@@ -1,0 +1,17 @@
+[package]
+name = "glitchtip-webhook-relay"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = "4.11.0"
+anyhow = "1.0.100"
+chrono = { version = "0.4.42", features = ["serde"] }
+env_logger = "0.11.8"
+log = "0.4.28"
+reqwest = { version = "0.12.24", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+toml = "0.9.8"
+utoipa = { version = "5.4.0", features = ["actix_extras", "chrono", "time"] }
+utoipa-scalar = { version = "0.3.0", features = ["actix-web"] }
