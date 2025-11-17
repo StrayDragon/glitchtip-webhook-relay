@@ -1,17 +1,18 @@
-mod types;
+mod config;
 mod converter;
 mod service;
-mod config;
+mod types;
 
 use actix_web::{App, HttpResponse, HttpServer, web};
 use std::env;
+use std::sync::Arc;
 use utoipa::OpenApi;
 use utoipa_scalar::{Scalar, Servable};
 
 // Import our modules
-use service::{health_check, get_config, receive_webhook};
-use config::ConfigManager;
-use types::{GlitchTipSlackWebhook, HealthResponse, ConfigResponse, WebhookResponse};
+use config::LazyConfigManager;
+use service::{receive_webhook, manage_config};
+use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookResponse};
 
 /// OpenAPI documentation for the GlitchTip to Feishu Webhook Relay
 #[derive(OpenApi)]
@@ -27,8 +28,6 @@ use types::{GlitchTipSlackWebhook, HealthResponse, ConfigResponse, WebhookRespon
     ),
     paths(
         crate::service::receive_webhook,
-        crate::service::health_check,
-        crate::service::get_config,
     ),
     components(
         schemas(
@@ -57,20 +56,12 @@ async fn main() -> std::io::Result<()> {
     // Initialize logging
     env_logger::init();
 
-    // Load configuration
-    let mut config = ConfigManager::load()
-        .expect("Failed to load configuration");
-
-    // Apply environment variable overrides
-    config.apply_env_overrides();
-
-    log::info!("Starting GlitchTip to Feishu Webhook Relay");
-    log::info!("Server will listen on port {}", config.server_port);
-    log::info!("Configured Feishu webhooks: {}", config.feishu_webhooks.len());
+    // Create lazy config manager
+    let config_manager = Arc::new(LazyConfigManager::new());
 
     // Print example if requested
     if env::args().any(|arg| arg == "--example-config") {
-        ConfigManager::save_example_config().unwrap();
+        config::ConfigManager::save_example_config().unwrap();
         return Ok(());
     }
 
@@ -80,24 +71,37 @@ async fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    let config_data = web::Data::new(config);
-    let port = config_data.server_port;
+    // Load config initially to get the port (this will be lazy-loaded)
+    let config = match config_manager.get_config() {
+        Ok(config) => config,
+        Err(e) => {
+            log::warn!("Failed to load configuration: {}, using defaults", e);
+            crate::types::Config::default()
+        }
+    };
+
+    log::info!("Starting GlitchTip to Feishu Webhook Relay with lazy loading");
+    log::info!("Server will listen on port {}", config.server_port);
+    log::info!(
+        "Configured Feishu webhooks: {}",
+        config.feishu_webhooks.len()
+    );
+
+    let port = config.server_port;
 
     // Start HTTP server
     HttpServer::new(move || {
-        let config_clone = config_data.clone();
+        let config_manager_clone = Arc::clone(&config_manager);
         App::new()
-            .app_data(config_clone)
+            .app_data(web::Data::new(config_manager_clone))
             // OpenAPI documentation endpoint (Scalar UI)
-            .service(Scalar::with_url("/docs", ApiDoc::openapi()))
+            .service(Scalar::with_url("/dev/openapi-ui/scalar", ApiDoc::openapi()))
             // Webhook endpoint
             .route("/webhook/glitchtip", web::post().to(receive_webhook))
-            // Health check
-            .route("/health", web::get().to(health_check))
-            // Configuration info
-            .route("/config", web::get().to(get_config))
+            // Unified config API endpoint (GET for view, POST for reload)
+            .route("/internal/config", web::route().to(manage_config))
             // OpenAPI JSON endpoint
-            .route("/api-docs/openapi.json", web::get().to(openapi_json))
+            .route("/dev/openapi.json", web::get().to(openapi_json))
             // Root endpoint with basic info
             .route("/", web::get().to(root_info))
     })
@@ -112,10 +116,10 @@ async fn root_info() -> HttpResponse {
         "version": env!("CARGO_PKG_VERSION"),
         "endpoints": {
             "webhook": "/webhook/glitchtip",
-            "health": "/health",
-            "config": "/config",
-            "docs": "/docs",
-            "openapi": "/api-docs/openapi.json"
+            "config": "/internal/config",
+            "config_info": "GET /internal/config for view, POST /internal/config for reload",
+            "docs": "/dev/openapi-ui/scalar",
+            "openapi": "/dev/openapi.json"
         },
         "documentation": "/docs"
     }))

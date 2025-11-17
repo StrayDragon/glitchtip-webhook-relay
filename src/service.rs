@@ -1,30 +1,38 @@
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpResponse, Result, HttpRequest};
 use reqwest::Client;
 use utoipa;
 use crate::types::*;
 use crate::converter::Converter;
+use crate::config::LazyConfigManager;
+use std::sync::Arc;
 
 pub struct WebhookService {
     client: Client,
-    config: web::Data<Config>,
+    config_manager: Arc<LazyConfigManager>,
 }
 
 impl WebhookService {
-    pub fn new(config: web::Data<Config>) -> Self {
+    pub fn new(config_manager: Arc<LazyConfigManager>) -> Self {
         Self {
             client: Client::new(),
-            config,
+            config_manager,
         }
     }
 
     pub async fn receive_glitchtip_webhook(
         webhook: web::Json<GlitchTipSlackWebhook>,
-        config: web::Data<Config>,
+        config_manager: web::Data<Arc<LazyConfigManager>>,
     ) -> Result<HttpResponse> {
         log::info!("Received GlitchTip webhook: {}", webhook.alias);
 
-        let service = Self::new(config);
-        let errors = service.forward_to_feishu(&webhook).await;
+        let service = Self::new(config_manager.get_ref().clone());
+        let config = service.config_manager.get_config()
+            .map_err(|e| {
+                log::error!("Failed to get configuration: {}", e);
+                actix_web::error::ErrorInternalServerError("Configuration error")
+            })?;
+
+        let errors = service.forward_to_feishu(&webhook, &config).await;
 
         if errors.is_empty() {
             Ok(HttpResponse::Ok().json(WebhookResponse {
@@ -42,10 +50,10 @@ impl WebhookService {
         }
     }
 
-    async fn forward_to_feishu(&self, glitchtip: &GlitchTipSlackWebhook) -> Vec<String> {
+    async fn forward_to_feishu(&self, glitchtip: &GlitchTipSlackWebhook, config: &Config) -> Vec<String> {
         let mut errors = Vec::new();
 
-        for webhook_config in &self.config.feishu_webhooks {
+        for webhook_config in &config.feishu_webhooks {
             if !webhook_config.enabled {
                 continue;
             }
@@ -117,53 +125,126 @@ impl WebhookService {
 )]
 pub async fn receive_webhook(
     webhook: web::Json<GlitchTipSlackWebhook>,
-    config: web::Data<Config>,
+    config_manager: web::Data<Arc<LazyConfigManager>>,
 ) -> Result<HttpResponse> {
-    WebhookService::receive_glitchtip_webhook(webhook, config).await
+    WebhookService::receive_glitchtip_webhook(webhook, config_manager).await
 }
 
-/// Health check endpoint
+/// Manage webhook configuration (reload or view)
 ///
-/// Returns the current health status and timestamp of the service.
-#[utoipa::path(
-    get,
-    path = "/health",
-    tag = "health",
-    responses(
-        (status = 200, description = "Service is healthy", body = HealthResponse)
-    )
-)]
-pub async fn health_check() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(HealthResponse {
-        status: "healthy".to_string(),
-        timestamp: chrono::Utc::now().to_rfc3339(),
-    }))
-}
+/// This endpoint can both reload and view current configuration.
+/// - POST: Force reload configuration from files (detects changes via MD5)
+/// - GET: View current configuration status without reloading
+pub async fn manage_config(
+    req: HttpRequest,
+    config_manager: web::Data<Arc<LazyConfigManager>>,
+) -> Result<HttpResponse> {
+    match req.method().as_str() {
+        "POST" => {
+            log::info!("Received configuration reload request");
 
-/// Get configuration information
-///
-/// Returns current configuration information with sensitive data masked.
-#[utoipa::path(
-    get,
-    path = "/config",
-    tag = "config",
-    responses(
-        (status = 200, description = "Configuration information", body = ConfigResponse)
-    )
-)]
-pub async fn get_config(config: web::Data<Config>) -> Result<HttpResponse> {
-    // Return sanitized config (without secrets)
-    let webhooks: Vec<FeishuWebhookInfo> = config.feishu_webhooks.iter().map(|w| {
-        FeishuWebhookInfo {
-            name: w.name.clone(),
-            url: if w.url.is_empty() { "".to_string() } else { "***".to_string() },
-            enabled: w.enabled,
-            has_secret: w.secret.is_some(),
+            match config_manager.force_reload() {
+                Ok(config) => {
+                    let metadata = config_manager.get_metadata().unwrap_or_default();
+                    log::info!("Configuration reloaded successfully");
+                    Ok(HttpResponse::Ok().json(serde_json::json!({
+                        "status": "success",
+                        "message": "Configuration reloaded successfully",
+                        "action": "reload",
+                        "config": {
+                            "server_port": config.server_port,
+                            "webhook_count": config.feishu_webhooks.len(),
+                            "enabled_webhooks": config.feishu_webhooks.iter()
+                                .filter(|w| w.enabled)
+                                .count(),
+                            "config_file": metadata.0,
+                            "md5_hash": metadata.1,
+                            "webhooks": config.feishu_webhooks.iter()
+                                .map(|w| serde_json::json!({
+                                    "name": w.name,
+                                    "enabled": w.enabled,
+                                    "has_secret": w.secret.is_some(),
+                                    "url_preview": if w.url.len() > 30 {
+                                        format!("{}...{}", &w.url[..15], &w.url[w.url.len()-10..])
+                                    } else {
+                                        w.url.clone()
+                                    }
+                                }))
+                                .collect::<Vec<_>>()
+                        }
+                    })))
+                }
+                Err(e) => {
+                    log::error!("Failed to reload configuration: {}", e);
+                    Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Failed to reload configuration",
+                        "action": "reload",
+                        "error": e.to_string()
+                    })))
+                }
+            }
         }
-    }).collect();
+        "GET" => {
+            log::debug!("Received configuration view request");
 
-    Ok(HttpResponse::Ok().json(ConfigResponse {
-        server_port: config.server_port,
-        feishu_webhooks: webhooks,
-    }))
+            match config_manager.get_metadata() {
+                Ok((path, hash)) => {
+                    match config_manager.get_config() {
+                        Ok(config) => {
+                            Ok(HttpResponse::Ok().json(serde_json::json!({
+                                "status": "success",
+                                "action": "view",
+                                "config": {
+                                    "server_port": config.server_port,
+                                    "webhook_count": config.feishu_webhooks.len(),
+                                    "enabled_webhooks": config.feishu_webhooks.iter()
+                                        .filter(|w| w.enabled)
+                                        .count(),
+                                    "config_file": path,
+                                    "md5_hash": hash,
+                                    "webhooks": config.feishu_webhooks.iter()
+                                        .map(|w| serde_json::json!({
+                                            "name": w.name,
+                                            "enabled": w.enabled,
+                                            "has_secret": w.secret.is_some(),
+                                            "url_preview": if w.url.len() > 30 {
+                                                format!("{}...{}", &w.url[..15], &w.url[w.url.len()-10..])
+                                            } else {
+                                                w.url.clone()
+                                            }
+                                        }))
+                                        .collect::<Vec<_>>()
+                                }
+                            })))
+                        }
+                        Err(e) => {
+                            Ok(HttpResponse::Ok().json(serde_json::json!({
+                                "status": "error",
+                                "action": "view",
+                                "config_file": path,
+                                "md5_hash": hash,
+                                "error": e.to_string()
+                            })))
+                        }
+                    }
+                }
+                Err(e) => {
+                    Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "action": "view",
+                        "error": e.to_string()
+                    })))
+                }
+            }
+        }
+        _ => {
+            Ok(HttpResponse::MethodNotAllowed().json(serde_json::json!({
+                "status": "error",
+                "message": "Method not allowed",
+                "allowed_methods": ["GET", "POST"]
+            })))
+        }
+    }
 }
+
