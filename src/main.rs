@@ -12,7 +12,7 @@ use utoipa_scalar::{Scalar, Servable};
 // Import our modules
 use config::LazyConfigManager;
 use service::{receive_webhook, manage_config};
-use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookResponse};
+use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookResponse, RootInfoResponse};
 
 /// OpenAPI documentation for the GlitchTip to Feishu Webhook Relay
 #[derive(OpenApi)]
@@ -28,6 +28,8 @@ use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookRespon
     ),
     paths(
         crate::service::receive_webhook,
+        crate::service::manage_config,
+        root_info,
     ),
     components(
         schemas(
@@ -41,12 +43,14 @@ use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookRespon
             types::FeishuWebhook,
             types::FeishuWebhookConfig,
             types::FeishuWebhookInfo,
+            RootInfoResponse,
         )
     ),
     tags(
         (name = "webhook", description = "Webhook processing endpoints"),
         (name = "health", description = "Health check endpoints"),
-        (name = "config", description = "Configuration endpoints")
+        (name = "config", description = "Configuration endpoints"),
+        (name = "info", description = "Service information endpoints")
     )
 )]
 struct ApiDoc;
@@ -110,6 +114,17 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
+/// Get service information
+///
+/// Returns basic information about the service including available endpoints
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = "info",
+    responses(
+        (status = 200, description = "Service information retrieved successfully", body = RootInfoResponse)
+    )
+)]
 async fn root_info() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "service": "GlitchTip to Feishu Webhook Relay",
@@ -125,7 +140,6 @@ async fn root_info() -> HttpResponse {
     }))
 }
 
-/// OpenAPI JSON endpoint
 async fn openapi_json() -> HttpResponse {
     HttpResponse::Ok().json(ApiDoc::openapi())
 }

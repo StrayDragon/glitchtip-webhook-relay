@@ -52,38 +52,24 @@ impl WebhookService {
 
     async fn forward_to_feishu(&self, glitchtip: &GlitchTipSlackWebhook, config: &Config) -> Vec<String> {
         let mut errors = Vec::new();
+        let converter = Converter::new(config.template_dir.as_deref());
 
         for webhook_config in &config.feishu_webhooks {
             if !webhook_config.enabled {
                 continue;
             }
 
-            // Convert to different Feishu formats
-            let feishu_messages = vec![
-                Converter::glitchtip_to_feishu_text(glitchtip),
-                Converter::glitchtip_to_feishu_rich_text(glitchtip),
-                Converter::glitchtip_to_feishu_card(glitchtip),
-            ];
+            // Convert to Feishu interactive card format
+            let feishu_msg = converter.glitchtip_to_feishu_card(glitchtip);
 
-            // Try each format (text, rich text, card)
-            for (i, feishu_msg) in feishu_messages.iter().enumerate() {
-                match self.send_to_feishu(&webhook_config.url, feishu_msg).await {
-                    Ok(_) => {
-                        log::info!("Successfully sent to {} using format {}",
-                                 webhook_config.name,
-                                 ["text", "rich_text", "card"][i]);
-                        break; // Success, no need to try other formats
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to send to {} using format {}: {}",
-                                  webhook_config.name,
-                                  ["text", "rich_text", "card"][i],
-                                  e);
-                        if i == feishu_messages.len() - 1 {
-                            // All formats failed
-                            errors.push(format!("{}: {}", webhook_config.name, e));
-                        }
-                    }
+            match self.send_to_feishu(&webhook_config.url, &feishu_msg).await {
+                Ok(_) => {
+                    log::info!("Successfully sent to {} using card format",
+                             webhook_config.name);
+                }
+                Err(e) => {
+                    log::error!("Failed to send to {}: {}", webhook_config.name, e);
+                    errors.push(format!("{}: {}", webhook_config.name, e));
                 }
             }
         }
@@ -135,6 +121,16 @@ pub async fn receive_webhook(
 /// This endpoint can both reload and view current configuration.
 /// - POST: Force reload configuration from files (detects changes via MD5)
 /// - GET: View current configuration status without reloading
+#[utoipa::path(
+    get,
+    post,
+    path = "/internal/config",
+    tag = "config",
+    responses(
+        (status = 200, description = "Configuration viewed successfully"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn manage_config(
     req: HttpRequest,
     config_manager: web::Data<Arc<LazyConfigManager>>,

@@ -168,12 +168,27 @@ pub struct WebhookResponse {
     pub errors: Option<Vec<String>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Root Info Response", description = "Service root information response")]
+pub struct RootInfoResponse {
+    /// Service name
+    pub service: String,
+    /// Service version
+    pub version: String,
+    /// Available endpoints
+    pub endpoints: serde_json::Value,
+    /// Documentation URL
+    pub documentation: String,
+}
+
 // Configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[schema(title = "Config", description = "Application configuration")]
 pub struct Config {
     /// Server port
     pub server_port: u16,
+    /// Template directory path (optional)
+    pub template_dir: Option<String>,
     /// List of Feishu webhook configurations
     pub feishu_webhooks: Vec<FeishuWebhookConfig>,
 }
@@ -195,6 +210,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             server_port: 8080,
+            template_dir: None,
             feishu_webhooks: vec![],
         }
     }

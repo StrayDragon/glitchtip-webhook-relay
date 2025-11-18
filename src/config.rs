@@ -233,6 +233,7 @@ impl Default for LazyConfigManager {
 pub struct ConfigManager;
 
 impl ConfigManager {
+    #[allow(dead_code)]
     pub fn load() -> Result<Config> {
         let lazy_manager = LazyConfigManager::new();
         lazy_manager.get_config()
@@ -242,6 +243,13 @@ impl ConfigManager {
         let example_config = r#"# GlitchTip to Feishu Webhook Relay Configuration
 
 server_port = 8080
+
+# Optional: Template directory for custom message templates
+# If not specified, embedded default templates will be used
+# template_dir = "/path/to/templates"
+
+# Feishu Webhook Configurations
+# You can configure multiple Feishu webhooks to send messages to different groups
 
 [[feishu_webhooks]]
 name = "main_feishu"
@@ -253,6 +261,21 @@ enabled = true
 name = "backup_feishu"
 url = "https://open.feishu.cn/open-apis/bot/v2/hook/BACKUP_WEBHOOK_URL_HERE"
 enabled = false
+
+# Environment Variables (Optional)
+# You can override config values with environment variables:
+#
+# PORT - Server port (e.g., PORT=9000)
+# FEISHU_WEBHOOK_URL - Primary Feishu webhook URL
+# FEISHU_WEBHOOK_SECRET - Secret for signature verification
+# ENABLE_HASH_COLORS - Enable/disable dynamic color generation for project/environment/server fields
+#   * true (default): Generate colors based on hash values (12 different colors)
+#   * false: Use fixed colors (red, carmine, orange)
+#
+# Examples:
+#   ENABLE_HASH_COLORS=true   # Dynamic colors (default)
+#   ENABLE_HASH_COLORS=false  # Fixed colors
+#   PORT=9000                 # Custom port
 "#;
 
         std::fs::write("config.example.toml", example_config)?;
