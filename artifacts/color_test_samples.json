@@ -1,0 +1,727 @@
+{
+  "description": "飞书颜色组测试样本 - 共12组颜色",
+  "color_pairs": [
+    {"index": 0, "background": "red-50", "foreground": "red"},
+    {"index": 1, "background": "orange-50", "foreground": "orange"},
+    {"index": 2, "background": "yellow-50", "foreground": "yellow"},
+    {"index": 3, "background": "green-50", "foreground": "green"},
+    {"index": 4, "background": "blue-50", "foreground": "blue"},
+    {"index": 5, "background": "purple-50", "foreground": "purple"},
+    {"index": 6, "background": "carmine-50", "foreground": "carmine"},
+    {"index": 7, "background": "violet-50", "foreground": "violet"},
+    {"index": 8, "background": "indigo-50", "foreground": "indigo"},
+    {"index": 9, "background": "wathet-50", "foreground": "wathet"},
+    {"index": 10, "background": "turquoise-50", "foreground": "turquoise"},
+    {"index": 11, "background": "lime-50", "foreground": "lime"}
+  ],
+  "samples": [
+    {
+      "group_id": 0,
+      "color_name": "红色组 (Red)",
+      "background": "red-50",
+      "foreground": "red",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #0 - 红色组"
+            },
+            "template": "red"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #0**: `red-50` 背景 + `red` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "red-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='red'>红色示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 1,
+      "color_name": "橙色组 (Orange)",
+      "background": "orange-50",
+      "foreground": "orange",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #1 - 橙色组"
+            },
+            "template": "orange"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #1**: `orange-50` 背景 + `orange` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "orange-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='orange'>橙色示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 2,
+      "color_name": "黄色组 (Yellow)",
+      "background": "yellow-50",
+      "foreground": "yellow",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #2 - 黄色组"
+            },
+            "template": "yellow"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #2**: `yellow-50` 背景 + `yellow` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "yellow-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='yellow'>黄色示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 3,
+      "color_name": "绿色组 (Green)",
+      "background": "green-50",
+      "foreground": "green",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #3 - 绿色组"
+            },
+            "template": "green"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #3**: `green-50` 背景 + `green` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "green-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='green'>绿色示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 4,
+      "color_name": "蓝色组 (Blue)",
+      "background": "blue-50",
+      "foreground": "blue",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #4 - 蓝色组"
+            },
+            "template": "blue"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #4**: `blue-50` 背景 + `blue` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "blue-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='blue'>蓝色示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 5,
+      "color_name": "紫色组 (Purple)",
+      "background": "purple-50",
+      "foreground": "purple",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #5 - 紫色组"
+            },
+            "template": "purple"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #5**: `purple-50` 背景 + `purple` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "purple-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='purple'>紫色示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 6,
+      "color_name": "洋红组 (Carmine)",
+      "background": "carmine-50",
+      "foreground": "carmine",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #6 - 洋红组"
+            },
+            "template": "carmine"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #6**: `carmine-50` 背景 + `carmine` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "carmine-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='carmine'>洋红示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 7,
+      "color_name": "紫罗兰组 (Violet)",
+      "background": "violet-50",
+      "foreground": "violet",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #7 - 紫罗兰组"
+            },
+            "template": "violet"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #7**: `violet-50` 背景 + `violet` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "violet-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='violet'>紫罗兰示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 8,
+      "color_name": "靛蓝组 (Indigo)",
+      "background": "indigo-50",
+      "foreground": "indigo",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #8 - 靛蓝组"
+            },
+            "template": "indigo"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #8**: `indigo-50` 背景 + `indigo` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "indigo-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='indigo'>靛蓝示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 9,
+      "color_name": "浅蓝组 (Wathet)",
+      "background": "wathet-50",
+      "foreground": "wathet",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #9 - 浅蓝组"
+            },
+            "template": "wathet"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #9**: `wathet-50` 背景 + `wathet` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "wathet-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='wathet'>浅蓝示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 10,
+      "color_name": "青绿组 (Turquoise)",
+      "background": "turquoise-50",
+      "foreground": "turquoise",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #10 - 青绿组"
+            },
+            "template": "turquoise"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #10**: `turquoise-50` 背景 + `turquoise` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "turquoise-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='turquoise'>青绿示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "group_id": 11,
+      "color_name": "柠檬绿组 (Lime)",
+      "background": "lime-50",
+      "foreground": "lime",
+      "feishu_card": {
+        "msg_type": "interactive",
+        "card": {
+          "schema": "2.0",
+          "config": {
+            "update_multi": true
+          },
+          "header": {
+            "title": {
+              "tag": "plain_text",
+              "content": "颜色组测试 #11 - 柠檬绿组"
+            },
+            "template": "green"
+          },
+          "body": {
+            "direction": "vertical",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**颜色组 #11**: `lime-50` 背景 + `lime` 文字",
+                "text_align": "left"
+              },
+              {
+                "tag": "column_set",
+                "flex_mode": "stretch",
+                "horizontal_spacing": "8px",
+                "columns": [
+                  {
+                    "tag": "column",
+                    "width": "weighted",
+                    "background_style": "lime-50",
+                    "elements": [
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>标签</font>",
+                        "text_align": "center"
+                      },
+                      {
+                        "tag": "markdown",
+                        "content": "<font color='lime'>柠檬绿示例</font>",
+                        "text_align": "center",
+                        "text_size": "normal_v2"
+                      }
+                    ],
+                    "padding": "12px 12px 12px 12px",
+                    "weight": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
