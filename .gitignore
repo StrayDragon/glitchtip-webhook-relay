@@ -22,3 +22,4 @@ target
 
 stub/private
 config.toml
+config.yaml

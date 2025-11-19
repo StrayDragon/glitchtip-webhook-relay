@@ -172,5 +172,11 @@ impl Config {
                 });
             }
         }
+
+        if let Ok(template_dir) = std::env::var("GWR_TEMPLATE_DIR") {
+            if !template_dir.is_empty() {
+                self.template_dir = Some(template_dir);
+            }
+        }
     }
 }

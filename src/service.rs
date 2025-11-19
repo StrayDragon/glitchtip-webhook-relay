@@ -15,6 +15,10 @@ impl WebhookService {
         Self { config_manager }
     }
 
+    fn create_converter(&self, config: &Config) -> Converter {
+        Converter::new(config.template_dir.as_deref())
+    }
+
     /// Forward webhook to specific endpoint
     pub async fn forward_to_endpoint(
         &self,
@@ -80,7 +84,12 @@ impl WebhookService {
         webhook_config: &WebhookConfig,
     ) -> Vec<String> {
         let mut errors = Vec::new();
-        let converter = Converter::new(None);
+        let config = self.config_manager.get_config()
+            .unwrap_or_else(|e| {
+                log::error!("Failed to get configuration: {}", e);
+                Default::default()
+            });
+        let converter = self.create_converter(&config);
 
         for url in urls {
             match self
@@ -110,7 +119,12 @@ impl WebhookService {
     ) -> Vec<String> {
         use futures::stream::{self, StreamExt};
 
-        let converter = Converter::new(None);
+        let config = self.config_manager.get_config()
+            .unwrap_or_else(|e| {
+                log::error!("Failed to get configuration: {}", e);
+                Default::default()
+            });
+        let converter = self.create_converter(&config);
 
         stream::iter(urls)
             .map(|url| {
@@ -258,6 +272,9 @@ pub async fn manage_config(
     path = Routes::ENDPOINT_WEBHOOK,
     tag = "Endpoint API",
     request_body = GlitchTipSlackWebhook,
+    params(
+        ("endpoint_id" = String, Path, description = "The endpoint identifier from configuration")
+    ),
     responses(
         (status = 200, description = "Webhook processed successfully", body = WebhookResponse),
         (status = 404, description = "Endpoint not found", body = WebhookResponse),
