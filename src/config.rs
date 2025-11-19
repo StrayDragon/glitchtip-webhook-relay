@@ -51,6 +51,7 @@ impl LazyConfigManager {
         if let Some(path) = config_path {
             log::info!("Loaded from: {:?}", path);
         }
+        log::info!("Server host: {}", final_config.server_host);
         log::info!("Server port: {}", final_config.server_port);
         log::info!("Webhooks configured: {}", final_config.webhooks.len());
 
@@ -132,16 +133,43 @@ impl ConfigManager {
         let example_config = include_str!("../config.example.yaml");
 
         std::fs::write("config.example.yaml", example_config)?;
-        println!("Example YAML configuration saved to config.example.yaml");
+        log::info!("Example YAML configuration saved to config.example.yaml");
         Ok(())
     }
 }
 
 impl Config {
     pub fn apply_env_overrides(&mut self) {
-        if let Ok(port) = std::env::var("PORT") {
+        if let Ok(port) = std::env::var("GWR_PORT") {
             if let Ok(port) = port.parse::<u16>() {
                 self.server_port = port;
+            }
+        }
+
+        if let Ok(host) = std::env::var("GWR_SERVER_HOST") {
+            self.server_host = host;
+        }
+
+        if let Ok(webhook_url) = std::env::var("GWR_FEISHU_WEBHOOK_URL") {
+            if !webhook_url.is_empty() {
+                self.webhooks.push(crate::types::WebhookConfig {
+                    name: "env_webhook".to_string(),
+                    url: vec![webhook_url],
+                    enabled: true,
+                    forward_config: crate::types::ForwardConfig::FeishuRobotMsg(
+                        crate::types::FeishuConfig {
+                            card_theme: None,
+                            mention_all: None,
+                            buttons: None,
+                            color_mapping: None,
+                        }
+                    ),
+                    config: crate::types::WebhookRuntimeConfig {
+                        n_par: 1,
+                        timeout: 30,
+                        retry: 3,
+                    },
+                });
             }
         }
     }

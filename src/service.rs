@@ -88,10 +88,10 @@ impl WebhookService {
                 .await
             {
                 Ok(_) => {
-                    log::info!("Successfully sent to {} ({})", webhook_config.name, url);
+                    log::info!("Successfully sent to {}", webhook_config.name);
                 }
                 Err(e) => {
-                    log::error!("Failed to send to {} ({}): {}", webhook_config.name, url, e);
+                    log::error!("Failed to send to {}: {}", webhook_config.name, e);
                     errors.push(format!("{} ({}): {}", webhook_config.name, url, e));
                 }
             }
@@ -126,16 +126,11 @@ impl WebhookService {
                     .await
                     {
                         Ok(_) => {
-                            log::info!("Successfully sent to {} ({})", webhook_config.name, url);
+                            log::info!("Successfully sent to {}", webhook_config.name);
                             None
                         }
                         Err(e) => {
-                            log::error!(
-                                "Failed to send to {} ({}): {}",
-                                webhook_config.name,
-                                url,
-                                e
-                            );
+                            log::error!("Failed to send to {}: {}", webhook_config.name, e);
                             Some(format!("{} ({}): {}", webhook_config.name, url, e))
                         }
                     }
@@ -173,7 +168,7 @@ impl WebhookService {
                         .ok_or_else(|| {
                             anyhow::anyhow!("Failed to convert to Feishu interactive card format")
                         })?;
-                send_http_request(url, &feishu_msg).await
+                send_http_request(url, &feishu_msg, webhook_config.config.timeout).await
             }
             ForwardConfig::WecomWebhook(_) => {
                 // TODO: Implement WeCom webhook support
@@ -191,8 +186,12 @@ impl WebhookService {
 async fn send_http_request(
     url: &str,
     message: &FeishuWebhook,
+    timeout_secs: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(timeout_secs))
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .build()?;
     let response = client
         .post(url)
         .header("Content-Type", "application/json")
@@ -201,12 +200,10 @@ async fn send_http_request(
         .await?;
 
     if response.status().is_success() {
-        log::debug!("Successfully sent webhook to {}", url);
         Ok(())
     } else {
         let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        Err(format!("HTTP {}: {}", status, body).into())
+        Err(format!("HTTP {}", status).into())
     }
 }
 
@@ -236,7 +233,7 @@ pub async fn manage_config(
         Err(e) => {
             log::error!("Failed to reload configuration: {}", e);
             Ok(HttpResponse::BadRequest().json(serde_json::json!({
-                "error": e.to_string()
+                "error": format!("Configuration reload failed: {}", e)
             })))
         }
     }

@@ -2,18 +2,33 @@
 # Only YAML format is supported. TOML is no longer supported.
 
 # Server configuration
+server_host: "127.0.0.1"
 server_port: 7876
 
 # Optional: Template directory for custom message templates
 # template_dir: "/path/to/templates"
 
 # ============================================================================
+# Environment Variables (All variables use GWR_ prefix to avoid conflicts)
+# ============================================================================
+# You can override config values with environment variables:
+#
+# GWR_PORT - Server port (e.g., GWR_PORT=9000)
+# GWR_SERVER_HOST - Server host address (e.g., GWR_SERVER_HOST=0.0.0.0)
+# GWR_FEISHU_WEBHOOK_URL - Primary Feishu webhook URL
+# GWR_ENABLE_HASH_COLORS - Enable/disable dynamic color generation (true/false)
+#
+# Examples:
+#   GWR_PORT=9000
+#   GWR_SERVER_HOST=0.0.0.0
+#   GWR_ENABLE_HASH_COLORS=false
+#   GWR_FEISHU_WEBHOOK_URL="https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_TOKEN"
+
+# ============================================================================
 # Webhook Configurations
 # ============================================================================
 webhooks:
   # Example 1: Minimal configuration (using all defaults)
-  # This example shows the simplest possible configuration.
-  # All optional fields use their default values.
   - name: minimal_example
     url:
       - "https://open.feishu.cn/open-apis/bot/v2/hook/MINIMAL_EXAMPLE"
@@ -21,120 +36,18 @@ webhooks:
     forward_config:
       type: feishu_robot_msg
     # config section is completely omitted - defaults to:
-    #   n_par: 1, timeout: 30, retry: 3
+    #   n_par: 1
+    #   timeout: 30
+    #   retry: 3
 
-  # Example 2: Configuration with anchor and reference (YAML feature)
-  # Using YAML anchors (&) and aliases (*) to avoid duplication
-  # Define a common base configuration once, then reference it
-  - name: prod_with_anchor
+  # Example 2: Configuration with some defaults
+  - name: partial_defaults
     url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_MAIN"
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_BACKUP"
-    enabled: true
-    <<: &prod_config  # Anchor: store this as prod_config
-    forward_config:
-      type: feishu_robot_msg
-      feishu_robot_msg:
-        card_theme: "red"
-        mention_all: true
-    config:
-      n_par: 10
-      timeout: 60
-      retry: 5
-
-  # Example 3: Reuse the anchored configuration
-  # Simply reference the previously defined config with *
-  - name: prod_archive
-    <<: *prod_config  # Alias: copy all fields from prod_config
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/ARCHIVE"
-    # All other fields (forward_config, config) are inherited from prod_config
-
-  # Example 4: Override specific fields while keeping others
-  - name: prod_high_concurrency
-    <<: *prod_config  # Start with prod_config
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/HIGH_CONCURRENCY"
-    config:
-      n_par: 20  # Override only n_par, keep timeout and retry
-
-  # Example 5: Disabled webhook
-  - name: disabled_example
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/DISABLED"
-    enabled: false
-
-# ============================================================================
-# Real-world Examples
-# ============================================================================
-  - name: dev_team
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/DEV_TEAM_WEBHOOK"
+      - "https://open.feishu.cn/open-apis/bot/v2/hook/PARTIAL_DEFAULTS"
     enabled: true
     forward_config:
       type: feishu_robot_msg
       feishu_robot_msg:
         card_theme: "blue"
-        mention_all: false
     config:
-      n_par: 1
-      timeout: 30
-      retry: 3
-
-  - name: production
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_MAIN"
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_BACKUP"
-    enabled: true
-    forward_config:
-      type: feishu_robot_msg
-      feishu_robot_msg:
-        card_theme: "red"
-        mention_all: true
-    config:
-      n_par: 10
-      timeout: 60
-      retry: 5
-
-# ============================================================================
-# Future Platform Support (Commented Out)
-# ============================================================================
-  # Enterprise WeChat:
-  # - name: wecom_team
-  #   url:
-  #     - "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
-  #   enabled: true
-  #   forward_config:
-  #     type: wecom_webhook
-  #     wecom_webhook:
-  #       corp_id: "your_corp_id"
-  #       corp_secret: "your_corp_secret"
-  #   config:
-  #     n_par: 5
-
-  # DingTalk:
-  # - name: dingtalk_team
-  #   url:
-  #     - "https://oapi.dingtalk.com/robot/send?access_token=xxx"
-  #   enabled: true
-  #   forward_config:
-  #     type: dingtalk_webhook
-  #     dingtalk_webhook:
-  #       access_token: "your_access_token"
-  #       secret: "your_secret"
-  #   config:
-  #     n_par: 1
-
-# ============================================================================
-# Environment Variables
-# ============================================================================
-# You can override config values with environment variables:
-#
-# PORT - Server port (e.g., PORT=9000)
-# FEISHU_WEBHOOK_URL - Primary Feishu webhook URL
-# FEISHU_WEBHOOK_SECRET - Secret for signature verification
-# ENABLE_HASH_COLORS - Enable/disable dynamic color generation
-#
-# Examples:
-#   PORT=9000
-#   ENABLE_HASH_COLORS=true
+      n_par: 5  # Only overriding n_par, timeout and retry use defaults

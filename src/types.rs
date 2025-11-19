@@ -279,6 +279,9 @@ pub struct Config {
     /// Server port
     #[serde(default = "default_server_port", skip_serializing_if = "is_default_server_port")]
     pub server_port: u16,
+    /// Server host address
+    #[serde(default = "default_server_host", skip_serializing_if = "is_default_server_host")]
+    pub server_host: String,
     /// Template directory path (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template_dir: Option<String>,
@@ -289,6 +292,8 @@ pub struct Config {
 
 fn default_server_port() -> u16 { 7876 }
 fn is_default_server_port(v: &u16) -> bool { *v == 7876 }
+fn default_server_host() -> String { "127.0.0.1".to_string() }
+fn is_default_server_host(v: &str) -> bool { v == "127.0.0.1" }
 fn default_webhooks() -> Vec<WebhookConfig> { vec![] }
 fn is_default_webhooks(v: &Vec<WebhookConfig>) -> bool { v.is_empty() }
 
@@ -310,6 +315,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             server_port: 7876,
+            server_host: "127.0.0.1".to_string(),
             template_dir: None,
             webhooks: vec![],
         }

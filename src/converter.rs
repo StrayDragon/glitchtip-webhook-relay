@@ -44,12 +44,12 @@ pub struct Converter {
 
 impl Converter {
     pub fn new(template_dir: Option<&str>) -> Self {
-        let enable_hash_colors = std::env::var("ENABLE_HASH_COLORS")
+        let enable_hash_colors = std::env::var("GWR_ENABLE_HASH_COLORS")
             .ok()
             .and_then(|v| v.parse::<bool>().ok())
             .unwrap_or(true); // 默认启用
 
-        println!("✓ Converter initialized with {} template and {} hash colors",
+        log::info!("Converter initialized with {} template and {} hash colors",
             if template_dir.is_some() { "custom" } else { "embedded" },
             if enable_hash_colors { "enabled" } else { "disabled" }
         );
@@ -67,13 +67,13 @@ impl Converter {
             let template_path = Path::new(dir).join("feishu/default.json.jinja2");
             if template_path.exists() {
                 if let Ok(content) = std::fs::read_to_string(&template_path) {
-                    println!("✓ Loaded external template from: {}", template_path.display());
+                    log::info!("Loaded external template from: {}", template_path.display());
                     return Some(content);
                 } else {
-                    eprintln!("Warning: Failed to read external template file");
+                    log::warn!("Failed to read external template file");
                 }
             } else {
-                eprintln!("Warning: External template not found at: {}, falling back to embedded", template_path.display());
+                log::warn!("External template not found at: {}, falling back to embedded", template_path.display());
             }
         }
 

@@ -78,12 +78,13 @@ async fn main() -> std::io::Result<()> {
     };
 
     log::info!("Starting GlitchTip to Feishu Webhook Relay with lazy loading");
-    log::info!("Server will listen on port {}", config.server_port);
+    log::info!("Server will listen on {}:{}", config.server_host, config.server_port);
     log::info!(
         "Configured webhooks: {}",
         config.webhooks.len()
     );
 
+    let host = config.server_host;
     let port = config.server_port;
 
     HttpServer::new(move || {
@@ -102,7 +103,7 @@ async fn main() -> std::io::Result<()> {
             .route(Routes::DEV_OPENAPI_JSON, web::get().to(openapi_json))
             .route(Routes::ROOT, web::get().to(root_info))
     })
-    .bind(("0.0.0.0", port))?
+    .bind((host.as_str(), port))?
     .run()
     .await
 }
