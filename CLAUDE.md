@@ -51,7 +51,6 @@ Default locations checked: `./config.toml`, `/etc/glitchtip-relay/config.toml`
 ## API Endpoints
 
 - `GET /` - Service information and endpoint list
-- `GET /health` - Health check with timestamp
 - `GET /config` - Current configuration (sanitized, URLs masked)
 - `POST /webhook/glitchtip` - Main webhook processing endpoint
 - `GET /docs` - Interactive OpenAPI documentation (Scalar UI)
@@ -70,7 +69,6 @@ Default locations checked: `./config.toml`, `/etc/glitchtip-relay/config.toml`
 - **Multi-format conversion**: Text → Rich Text → Interactive Card formats
 - **Multiple webhooks**: Forward to multiple Feishu endpoints simultaneously
 - **Fallback handling**: Automatic format fallback on conversion failures
-- **Health monitoring**: Built-in health check endpoint
 - **Interactive docs**: Complete OpenAPI documentation with Scalar UI
 
 ## Testing Status

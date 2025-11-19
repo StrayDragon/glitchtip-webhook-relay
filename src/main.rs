@@ -1,5 +1,6 @@
 mod config;
 mod converter;
+mod routes;
 mod service;
 mod types;
 
@@ -9,12 +10,11 @@ use std::sync::Arc;
 use utoipa::OpenApi;
 use utoipa_scalar::{Scalar, Servable};
 
-// Import our modules
 use config::LazyConfigManager;
-use service::{receive_webhook, manage_config};
-use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookResponse, RootInfoResponse};
+use routes::Routes;
+use service::{manage_config, receive_webhook};
+use types::{ConfigResponse, GlitchTipSlackWebhook, WebhookResponse};
 
-/// OpenAPI documentation for the GlitchTip to Feishu Webhook Relay
 #[derive(OpenApi)]
 #[openapi(
     info(
@@ -29,12 +29,10 @@ use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookRespon
     paths(
         crate::service::receive_webhook,
         crate::service::manage_config,
-        root_info,
     ),
     components(
         schemas(
             GlitchTipSlackWebhook,
-            HealthResponse,
             ConfigResponse,
             WebhookResponse,
             types::SlackAttachment,
@@ -43,14 +41,11 @@ use types::{ConfigResponse, GlitchTipSlackWebhook, HealthResponse, WebhookRespon
             types::FeishuWebhook,
             types::FeishuWebhookConfig,
             types::FeishuWebhookInfo,
-            RootInfoResponse,
         )
     ),
     tags(
         (name = "webhook", description = "Webhook processing endpoints"),
-        (name = "health", description = "Health check endpoints"),
-        (name = "config", description = "Configuration endpoints"),
-        (name = "info", description = "Service information endpoints")
+        (name = "config", description = "Configuration endpoints")
     )
 )]
 struct ApiDoc;
@@ -66,12 +61,6 @@ async fn main() -> std::io::Result<()> {
     // Print example if requested
     if env::args().any(|arg| arg == "--example-config") {
         config::ConfigManager::save_example_config().unwrap();
-        return Ok(());
-    }
-
-    // Print help if requested
-    if env::args().any(|arg| arg == "--help" || arg == "-h") {
-        print_help();
         return Ok(());
     }
 
@@ -93,73 +82,28 @@ async fn main() -> std::io::Result<()> {
 
     let port = config.server_port;
 
-    // Start HTTP server
     HttpServer::new(move || {
         let config_manager_clone = Arc::clone(&config_manager);
         App::new()
             .app_data(web::Data::new(config_manager_clone))
-            // OpenAPI documentation endpoint (Scalar UI)
-            .service(Scalar::with_url("/dev/openapi-ui/scalar", ApiDoc::openapi()))
-            // Webhook endpoint
-            .route("/webhook/glitchtip", web::post().to(receive_webhook))
-            // Unified config API endpoint (GET for view, POST for reload)
-            .route("/internal/config", web::route().to(manage_config))
-            // OpenAPI JSON endpoint
-            .route("/dev/openapi.json", web::get().to(openapi_json))
-            // Root endpoint with basic info
-            .route("/", web::get().to(root_info))
+            .service(Scalar::with_url(
+                Routes::DEV_OPENAPI_UI,
+                ApiDoc::openapi(),
+            ))
+            .route(Routes::WEBHOOK_GLITCHTIP, web::post().to(receive_webhook))
+            .route(Routes::INTERNAL_CONFIG_RELOAD, web::get().to(manage_config))
+            .route(Routes::DEV_OPENAPI_JSON, web::get().to(openapi_json))
+            .route(Routes::ROOT, web::get().to(root_info))
     })
     .bind(("0.0.0.0", port))?
     .run()
     .await
 }
 
-/// Get service information
-///
-/// Returns basic information about the service including available endpoints
-#[utoipa::path(
-    get,
-    path = "/",
-    tag = "info",
-    responses(
-        (status = 200, description = "Service information retrieved successfully", body = RootInfoResponse)
-    )
-)]
 async fn root_info() -> HttpResponse {
-    HttpResponse::Ok().json(serde_json::json!({
-        "service": "GlitchTip to Feishu Webhook Relay",
-        "version": env!("CARGO_PKG_VERSION"),
-        "endpoints": {
-            "webhook": "/webhook/glitchtip",
-            "config": "/internal/config",
-            "config_info": "GET /internal/config for view, POST /internal/config for reload",
-            "docs": "/dev/openapi-ui/scalar",
-            "openapi": "/dev/openapi.json"
-        },
-        "documentation": "/docs"
-    }))
+    HttpResponse::Ok().finish()
 }
 
 async fn openapi_json() -> HttpResponse {
     HttpResponse::Ok().json(ApiDoc::openapi())
-}
-
-fn print_help() {
-    println!("GlitchTip to Feishu Webhook Relay");
-    println!();
-    println!("USAGE:");
-    println!("    {} [OPTIONS]", env::args().next().unwrap_or_default());
-    println!();
-    println!("OPTIONS:");
-    println!("    --example-config    Generate example configuration file");
-    println!("    -h, --help          Show this help message");
-    println!();
-    println!("ENVIRONMENT VARIABLES:");
-    println!("    PORT                    Server port (default: 8080)");
-    println!("    FEISHU_WEBHOOK_URL      Feishu webhook URL");
-    println!("    FEISHU_WEBHOOK_SECRET   Optional webhook secret");
-    println!();
-    println!("CONFIGURATION:");
-    println!("    Create config.toml or config.json in the current directory");
-    println!("    Run --example-config to generate a template");
 }

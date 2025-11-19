@@ -1,9 +1,10 @@
-use actix_web::{web, HttpResponse, Result, HttpRequest};
+use actix_web::{web, HttpResponse, Result};
 use reqwest::Client;
 use utoipa;
 use crate::types::*;
 use crate::converter::Converter;
 use crate::config::LazyConfigManager;
+use crate::routes::Routes;
 use std::sync::Arc;
 
 pub struct WebhookService {
@@ -101,8 +102,8 @@ impl WebhookService {
 /// Receives a GlitchTip webhook in Slack format and forwards it to configured Feishu webhooks.
 #[utoipa::path(
     post,
-    path = "/webhook/glitchtip",
-    tag = "webhook",
+    path = Routes::WEBHOOK_GLITCHTIP,
+    tag = "Main API",
     request_body = GlitchTipSlackWebhook,
     responses(
         (status = 200, description = "Webhook processed successfully", body = WebhookResponse),
@@ -116,129 +117,33 @@ pub async fn receive_webhook(
     WebhookService::receive_glitchtip_webhook(webhook, config_manager).await
 }
 
-/// Manage webhook configuration (reload or view)
+/// Reload configuration from file
 ///
-/// This endpoint can both reload and view current configuration.
-/// - POST: Force reload configuration from files (detects changes via MD5)
-/// - GET: View current configuration status without reloading
+/// Reloads the configuration from the default config file location.
+/// Returns 200 on success (no content), 400 with error message on failure.
 #[utoipa::path(
     get,
-    post,
-    path = "/internal/config",
-    tag = "config",
+    path = Routes::INTERNAL_CONFIG_RELOAD,
+    tag = "Internal API",
     responses(
-        (status = 200, description = "Configuration viewed successfully"),
-        (status = 500, description = "Internal server error")
+        (status = 200, description = "Configuration reloaded successfully"),
+        (status = 400, description = "Failed to reload configuration")
     )
 )]
 pub async fn manage_config(
-    req: HttpRequest,
     config_manager: web::Data<Arc<LazyConfigManager>>,
 ) -> Result<HttpResponse> {
-    match req.method().as_str() {
-        "POST" => {
-            log::info!("Received configuration reload request");
+    log::info!("Received configuration reload request");
 
-            match config_manager.force_reload() {
-                Ok(config) => {
-                    let metadata = config_manager.get_metadata().unwrap_or_default();
-                    log::info!("Configuration reloaded successfully");
-                    Ok(HttpResponse::Ok().json(serde_json::json!({
-                        "status": "success",
-                        "message": "Configuration reloaded successfully",
-                        "action": "reload",
-                        "config": {
-                            "server_port": config.server_port,
-                            "webhook_count": config.feishu_webhooks.len(),
-                            "enabled_webhooks": config.feishu_webhooks.iter()
-                                .filter(|w| w.enabled)
-                                .count(),
-                            "config_file": metadata.0,
-                            "md5_hash": metadata.1,
-                            "webhooks": config.feishu_webhooks.iter()
-                                .map(|w| serde_json::json!({
-                                    "name": w.name,
-                                    "enabled": w.enabled,
-                                    "has_secret": w.secret.is_some(),
-                                    "url_preview": if w.url.len() > 30 {
-                                        format!("{}...{}", &w.url[..15], &w.url[w.url.len()-10..])
-                                    } else {
-                                        w.url.clone()
-                                    }
-                                }))
-                                .collect::<Vec<_>>()
-                        }
-                    })))
-                }
-                Err(e) => {
-                    log::error!("Failed to reload configuration: {}", e);
-                    Ok(HttpResponse::InternalServerError().json(serde_json::json!({
-                        "status": "error",
-                        "message": "Failed to reload configuration",
-                        "action": "reload",
-                        "error": e.to_string()
-                    })))
-                }
-            }
+    match config_manager.force_reload() {
+        Ok(_) => {
+            log::info!("Configuration reloaded successfully");
+            Ok(HttpResponse::Ok().finish())
         }
-        "GET" => {
-            log::debug!("Received configuration view request");
-
-            match config_manager.get_metadata() {
-                Ok((path, hash)) => {
-                    match config_manager.get_config() {
-                        Ok(config) => {
-                            Ok(HttpResponse::Ok().json(serde_json::json!({
-                                "status": "success",
-                                "action": "view",
-                                "config": {
-                                    "server_port": config.server_port,
-                                    "webhook_count": config.feishu_webhooks.len(),
-                                    "enabled_webhooks": config.feishu_webhooks.iter()
-                                        .filter(|w| w.enabled)
-                                        .count(),
-                                    "config_file": path,
-                                    "md5_hash": hash,
-                                    "webhooks": config.feishu_webhooks.iter()
-                                        .map(|w| serde_json::json!({
-                                            "name": w.name,
-                                            "enabled": w.enabled,
-                                            "has_secret": w.secret.is_some(),
-                                            "url_preview": if w.url.len() > 30 {
-                                                format!("{}...{}", &w.url[..15], &w.url[w.url.len()-10..])
-                                            } else {
-                                                w.url.clone()
-                                            }
-                                        }))
-                                        .collect::<Vec<_>>()
-                                }
-                            })))
-                        }
-                        Err(e) => {
-                            Ok(HttpResponse::Ok().json(serde_json::json!({
-                                "status": "error",
-                                "action": "view",
-                                "config_file": path,
-                                "md5_hash": hash,
-                                "error": e.to_string()
-                            })))
-                        }
-                    }
-                }
-                Err(e) => {
-                    Ok(HttpResponse::InternalServerError().json(serde_json::json!({
-                        "status": "error",
-                        "action": "view",
-                        "error": e.to_string()
-                    })))
-                }
-            }
-        }
-        _ => {
-            Ok(HttpResponse::MethodNotAllowed().json(serde_json::json!({
-                "status": "error",
-                "message": "Method not allowed",
-                "allowed_methods": ["GET", "POST"]
+        Err(e) => {
+            log::error!("Failed to reload configuration: {}", e);
+            Ok(HttpResponse::BadRequest().json(serde_json::json!({
+                "error": e.to_string()
             })))
         }
     }

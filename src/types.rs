@@ -127,15 +127,6 @@ pub enum FeishuPostElement {
 
 // Response structures for API endpoints
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[schema(title = "Health Response", description = "Health check response")]
-pub struct HealthResponse {
-    /// Service status
-    pub status: String,
-    /// Current timestamp
-    pub timestamp: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[schema(title = "Config Response", description = "Configuration information response")]
 pub struct ConfigResponse {
     /// Server port
@@ -166,19 +157,6 @@ pub struct WebhookResponse {
     pub message: String,
     /// Optional errors list
     pub errors: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[schema(title = "Root Info Response", description = "Service root information response")]
-pub struct RootInfoResponse {
-    /// Service name
-    pub service: String,
-    /// Service version
-    pub version: String,
-    /// Available endpoints
-    pub endpoints: serde_json::Value,
-    /// Documentation URL
-    pub documentation: String,
 }
 
 // Configuration structure
