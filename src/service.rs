@@ -1,10 +1,10 @@
-use actix_web::{web, HttpResponse, Result};
-use utoipa;
-use crate::types::*;
-use crate::converter::Converter;
 use crate::config::LazyConfigManager;
+use crate::converter::Converter;
 use crate::routes::Routes;
+use crate::types::*;
+use actix_web::{HttpResponse, Result, web};
 use std::sync::Arc;
+use utoipa;
 
 pub struct WebhookService {
     config_manager: Arc<LazyConfigManager>,
@@ -12,9 +12,7 @@ pub struct WebhookService {
 
 impl WebhookService {
     pub fn new(config_manager: Arc<LazyConfigManager>) -> Self {
-        Self {
-            config_manager,
-        }
+        Self { config_manager }
     }
 
     /// Forward webhook to specific endpoint
@@ -27,7 +25,8 @@ impl WebhookService {
         log::info!("Forwarding webhook to endpoint: {}", endpoint_id);
 
         // Look up webhook configuration by name
-        let webhook_config = config.webhooks
+        let webhook_config = config
+            .webhooks
             .iter()
             .find(|w| w.name == endpoint_id)
             .ok_or_else(|| format!("Webhook '{}' not found in configuration", endpoint_id))?;
@@ -44,7 +43,9 @@ impl WebhookService {
         }
 
         // Forward based on n_par setting
-        let errors = self.forward_with_parallelism(glitchtip, webhook_config).await;
+        let errors = self
+            .forward_with_parallelism(glitchtip, webhook_config)
+            .await;
 
         Ok(errors)
     }
@@ -60,12 +61,15 @@ impl WebhookService {
 
         // Single URL or sequential mode
         if urls.len() == 1 || n_par <= 1 {
-            return self.forward_sequential(glitchtip, urls, webhook_config).await;
+            return self
+                .forward_sequential(glitchtip, urls, webhook_config)
+                .await;
         }
 
         // Parallel mode with limit
         let limit = n_par as usize;
-        self.forward_parallel(glitchtip, urls, webhook_config, limit).await
+        self.forward_parallel(glitchtip, urls, webhook_config, limit)
+            .await
     }
 
     /// Sequential forwarding
@@ -79,7 +83,10 @@ impl WebhookService {
         let converter = Converter::new(None);
 
         for url in urls {
-            match self.send_by_platform(glitchtip, url, webhook_config, &converter).await {
+            match self
+                .send_by_platform(glitchtip, url, webhook_config, &converter)
+                .await
+            {
                 Ok(_) => {
                     log::info!("Successfully sent to {} ({})", webhook_config.name, url);
                 }
@@ -110,13 +117,25 @@ impl WebhookService {
                 let webhook_config = webhook_config.clone();
                 let converter_ref = &converter;
                 async move {
-                    match Self::send_by_platform_impl(glitchtip, url, &webhook_config, converter_ref).await {
+                    match Self::send_by_platform_impl(
+                        glitchtip,
+                        url,
+                        &webhook_config,
+                        converter_ref,
+                    )
+                    .await
+                    {
                         Ok(_) => {
                             log::info!("Successfully sent to {} ({})", webhook_config.name, url);
                             None
                         }
                         Err(e) => {
-                            log::error!("Failed to send to {} ({}): {}", webhook_config.name, url, e);
+                            log::error!(
+                                "Failed to send to {} ({}): {}",
+                                webhook_config.name,
+                                url,
+                                e
+                            );
                             Some(format!("{} ({}): {}", webhook_config.name, url, e))
                         }
                     }
@@ -148,7 +167,12 @@ impl WebhookService {
         match &webhook_config.forward_config {
             ForwardConfig::FeishuRobotMsg(_) => {
                 // Convert to Feishu interactive card format
-                let feishu_msg = converter.glitchtip_to_feishu_card(glitchtip);
+                let feishu_msg =
+                    converter
+                        .glitchtip_to_feishu_card(glitchtip)
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("Failed to convert to Feishu interactive card format")
+                        })?;
                 send_http_request(url, &feishu_msg).await
             }
             ForwardConfig::WecomWebhook(_) => {
@@ -164,7 +188,10 @@ impl WebhookService {
 }
 
 /// Send HTTP request with proper error handling
-async fn send_http_request(url: &str, message: &FeishuWebhook) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn send_http_request(
+    url: &str,
+    message: &FeishuWebhook,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::Client::new();
     let response = client
         .post(url)
@@ -249,22 +276,31 @@ pub async fn receive_endpoint_webhook(
     log::info!("Received GlitchTip webhook for endpoint: {}", endpoint_id);
 
     let service = WebhookService::new(config_manager.get_ref().clone());
-    let config = service.config_manager.get_config()
-        .map_err(|e| {
-            log::error!("Failed to get configuration: {}", e);
-            actix_web::error::ErrorInternalServerError("Configuration error")
-        })?;
+    let config = service.config_manager.get_config().map_err(|e| {
+        log::error!("Failed to get configuration: {}", e);
+        actix_web::error::ErrorInternalServerError("Configuration error")
+    })?;
 
-    match service.forward_to_endpoint(&webhook, &endpoint_id, &config).await {
+    match service
+        .forward_to_endpoint(&webhook, &endpoint_id, &config)
+        .await
+    {
         Ok(errors) => {
             if errors.is_empty() {
                 Ok(HttpResponse::Ok().json(WebhookResponse {
                     status: "success".to_string(),
-                    message: format!("Webhook forwarded successfully to endpoint '{}'", endpoint_id),
+                    message: format!(
+                        "Webhook forwarded successfully to endpoint '{}'",
+                        endpoint_id
+                    ),
                     errors: None,
                 }))
             } else {
-                log::warn!("Some webhooks failed for endpoint '{}': {:?}", endpoint_id, errors);
+                log::warn!(
+                    "Some webhooks failed for endpoint '{}': {:?}",
+                    endpoint_id,
+                    errors
+                );
                 Ok(HttpResponse::Ok().json(WebhookResponse {
                     status: "partial_success".to_string(),
                     message: format!("Some webhooks failed for endpoint '{}'", endpoint_id),
@@ -282,4 +318,3 @@ pub async fn receive_endpoint_webhook(
         }
     }
 }
-

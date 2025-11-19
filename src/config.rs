@@ -35,10 +35,8 @@ impl LazyConfigManager {
     fn reload_config(&self) -> Result<Config> {
         log::info!("Loading configuration...");
 
-        // Find and load config file
         let (config, config_path) = self.find_and_load_config()?;
 
-        // Update config
         {
             let mut config_guard = self.config.write().map_err(|e| {
                 anyhow::anyhow!("Failed to acquire write lock on config: {}", e)
@@ -46,7 +44,6 @@ impl LazyConfigManager {
             *config_guard = Some(config.clone());
         }
 
-        // Apply environment variable overrides
         let mut final_config = config;
         final_config.apply_env_overrides();
 
@@ -132,149 +129,7 @@ impl ConfigManager {
     }
 
     pub fn save_example_config() -> Result<()> {
-        let example_config = r#"# GlitchTip to Feishu Webhook Relay Configuration (v2.0)
-# Only YAML format is supported. TOML is no longer supported.
-
-# Server configuration
-server_port: 7876
-
-# Optional: Template directory for custom message templates
-# template_dir: "/path/to/templates"
-
-# Webhook configurations
-webhooks:
-  # Example 1: Minimal configuration (using all defaults)
-  # This example shows the simplest possible configuration.
-  # All optional fields use their default values.
-  - name: minimal_example
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/MINIMAL_EXAMPLE"
-    enabled: true
-    forward_config:
-      type: feishu_robot_msg
-    # config section is completely omitted - defaults to:
-    #   n_par: 1
-    #   timeout: 30
-    #   retry: 3
-
-  # Example 2: Configuration with some defaults
-  # Only specifying non-default values
-  - name: partial_defaults
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PARTIAL_DEFAULTS"
-    enabled: true
-    forward_config:
-      type: feishu_robot_msg
-      feishu_robot_msg:
-        card_theme: "blue"
-    config:
-      n_par: 5  # Only overriding n_par, timeout and retry use defaults
-
-  # Example 3: Full configuration
-  # Specifying all available options
-  - name: full_example
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/MAIN"
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/BACKUP"
-    enabled: true
-    forward_config:
-      type: feishu_robot_msg
-      feishu_robot_msg:
-        card_theme: "red"
-        mention_all: true
-        buttons:
-          - text: "View Details"
-            url: "https://your-domain.com/details"
-          - text: "Emergency"
-            url: "https://your-domain.com/emergency"
-        color_mapping:
-          error: "red"
-          warning: "orange"
-          info: "blue"
-    config:
-      n_par: 10         # Max 10 concurrent requests
-      timeout: 60       # Request timeout in seconds
-      retry: 5          # Number of retries on failure
-
-  # Example 4: Disabled webhook
-  # Returns HTTP 200 but doesn't forward the message
-  - name: disabled_example
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/DISABLED"
-    enabled: false
-
-  # Real-world examples:
-  - name: dev_team
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/DEV_TEAM_WEBHOOK"
-    enabled: true
-    forward_config:
-      type: feishu_robot_msg
-      feishu_robot_msg:
-        card_theme: "blue"
-        mention_all: false
-    config:
-      n_par: 1          # Sequential for dev team
-      timeout: 30
-      retry: 3
-
-  - name: production
-    url:
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_MAIN"
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_BACKUP"
-      - "https://open.feishu.cn/open-apis/bot/v2/hook/PROD_ARCHIVE"
-    enabled: true
-    forward_config:
-      type: feishu_robot_msg
-      feishu_robot_msg:
-        card_theme: "red"
-        mention_all: true
-    config:
-      n_par: 10         # High concurrency for production
-      timeout: 60
-      retry: 5
-
-  # Future: Enterprise WeChat support
-  # - name: wecom_team
-  #   url:
-  #     - "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
-  #   enabled: true
-  #   forward_config:
-  #     type: wecom_webhook
-  #     wecom_webhook:
-  #       corp_id: "your_corp_id"
-  #       corp_secret: "your_corp_secret"
-  #   config:
-  #     n_par: 5
-
-  # Future: DingTalk support
-  # - name: dingtalk_team
-  #   url:
-  #     - "https://oapi.dingtalk.com/robot/send?access_token=xxx"
-  #   enabled: true
-  #   forward_config:
-  #     type: dingtalk_webhook
-  #     dingtalk_webhook:
-  #       access_token: "your_access_token"
-  #       secret: "your_secret"
-  #   config:
-  #     n_par: 1
-
-# Environment Variables (Optional)
-# You can override config values with environment variables:
-#
-# PORT - Server port (e.g., PORT=9000)
-# FEISHU_WEBHOOK_URL - Primary Feishu webhook URL
-# FEISHU_WEBHOOK_SECRET - Secret for signature verification
-# ENABLE_HASH_COLORS - Enable/disable dynamic color generation
-#   * true (default): Generate colors based on hash values
-#   * false: Use fixed colors
-#
-# Examples:
-#   ENABLE_HASH_COLORS=true   # Dynamic colors (default)
-#   ENABLE_HASH_COLORS=false  # Fixed colors
-#   PORT=9000                 # Custom port
-"#;
+        let example_config = include_str!("../config.example.yaml");
 
         std::fs::write("config.example.yaml", example_config)?;
         println!("Example YAML configuration saved to config.example.yaml");
@@ -282,35 +137,11 @@ webhooks:
     }
 }
 
-// Environment variable support
 impl Config {
     pub fn apply_env_overrides(&mut self) {
         if let Ok(port) = std::env::var("PORT") {
             if let Ok(port) = port.parse::<u16>() {
                 self.server_port = port;
-            }
-        }
-
-        if let Ok(webhook_url) = std::env::var("FEISHU_WEBHOOK_URL") {
-            if !webhook_url.is_empty() {
-                self.webhooks.push(crate::types::WebhookConfig {
-                    name: "env_webhook".to_string(),
-                    url: vec![webhook_url],
-                    enabled: true,
-                    forward_config: crate::types::ForwardConfig::FeishuRobotMsg(
-                        crate::types::FeishuConfig {
-                            card_theme: None,
-                            mention_all: None,
-                            buttons: None,
-                            color_mapping: None,
-                        }
-                    ),
-                    config: crate::types::WebhookRuntimeConfig {
-                        n_par: 1,
-                        timeout: 30,
-                        retry: 3,
-                    },
-                });
             }
         }
     }
