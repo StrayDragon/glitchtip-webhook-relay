@@ -1,0 +1,86 @@
+# Git and version control
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+docs/
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+target/
+Cargo.lock
+artifacts/
+
+# Test and coverage
+coverage/
+*.profraw
+*.lcov
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Log files
+*.log
+logs/
+
+# Runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Node modules (if any)
+node_modules/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Certificates
+*.pem
+*.key
+*.crt
+
+# Configuration files that might contain secrets
+config.yaml
+config.yml
+!config.example.yaml
+
+# Test data and samples
+stub/
