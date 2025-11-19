@@ -8,14 +8,15 @@
 /// ```
 /// use crate::routes::Routes;
 ///
-/// let path = Routes::WEBHOOK_GLITCHTIP;
+/// let path = Routes::ENDPOINT_WEBHOOK;
 /// ```
 
 pub struct Routes;
 
 impl Routes {
-    /// Webhook endpoint for receiving GlitchTip webhooks
-    pub const WEBHOOK_GLITCHTIP: &'static str = "/webhook/glitchtip";
+    /// Endpoint-based webhook routing (v2.0)
+    /// Pattern: /i/{endpoint_id}
+    pub const ENDPOINT_WEBHOOK: &'static str = "/i/{endpoint_id}";
 
     /// Internal configuration reload endpoint
     pub const INTERNAL_CONFIG_RELOAD: &'static str = "/internal/config/reload";

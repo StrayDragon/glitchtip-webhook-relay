@@ -159,20 +159,142 @@ pub struct WebhookResponse {
     pub errors: Option<Vec<String>>,
 }
 
-// Configuration structure
+// ============================================================================
+// Platform Types (v2.0 - YAML Configuration)
+// ============================================================================
+
+/// Feishu robot message configuration
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Feishu Config", description = "Feishu robot message configuration")]
+pub struct FeishuConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub card_theme: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mention_all: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub buttons: Option<Vec<Button>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color_mapping: Option<std::collections::HashMap<String, String>>,
+}
+
+/// WeChat Work (Enterprise WeChat) configuration
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Wecom Config", description = "WeChat Work webhook configuration")]
+pub struct WecomConfig {
+    pub corp_id: String,
+    pub corp_secret: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub to_user: Option<String>,
+}
+
+/// DingTalk configuration
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Dingtalk Config", description = "DingTalk webhook configuration")]
+pub struct DingtalkConfig {
+    pub access_token: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub at_mobiles: Option<Vec<String>>,
+}
+
+/// Custom button for interactive messages
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Button", description = "Custom button configuration")]
+pub struct Button {
+    pub text: String,
+    pub url: String,
+}
+
+/// Forwarding configuration
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Forward Config", description = "Message forwarding configuration")]
+#[serde(tag = "type")]
+pub enum ForwardConfig {
+    #[serde(rename = "feishu_robot_msg")]
+    FeishuRobotMsg(FeishuConfig),
+    #[serde(rename = "wecom_webhook")]
+    WecomWebhook(WecomConfig),
+    #[serde(rename = "dingtalk_webhook")]
+    DingtalkWebhook(DingtalkConfig),
+}
+
+/// Webhook runtime configuration
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Webhook Config", description = "Webhook runtime configuration")]
+pub struct WebhookRuntimeConfig {
+    /// Number of parallel requests (<1 = sequential, 1 = serial, >1 = max concurrent)
+    #[serde(default = "default_parallel", skip_serializing_if = "is_default_parallel")]
+    pub n_par: i32,
+    #[serde(default = "default_timeout", skip_serializing_if = "is_default_timeout")]
+    pub timeout: u64,
+    #[serde(default = "default_retry", skip_serializing_if = "is_default_retry")]
+    pub retry: u32,
+}
+
+fn default_parallel() -> i32 { 1 }
+fn is_default_parallel(v: &i32) -> bool { *v == 1 }
+fn default_timeout() -> u64 { 30 }
+fn is_default_timeout(v: &u64) -> bool { *v == 30 }
+fn default_retry() -> u32 { 3 }
+fn is_default_retry(v: &u32) -> bool { *v == 3 }
+
+/// Main webhook configuration
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(title = "Webhook", description = "Webhook configuration")]
+pub struct WebhookConfig {
+    /// Webhook name (must be unique)
+    pub name: String,
+    /// List of webhook URLs (supports multiple endpoints)
+    pub url: Vec<String>,
+    /// Whether this webhook is enabled
+    #[serde(default = "default_enabled", skip_serializing_if = "is_default_enabled")]
+    pub enabled: bool,
+    /// Forwarding configuration
+    pub forward_config: ForwardConfig,
+    /// Runtime configuration
+    #[serde(default = "default_runtime_config", skip_serializing_if = "is_default_runtime_config")]
+    pub config: WebhookRuntimeConfig,
+}
+
+fn default_enabled() -> bool { true }
+fn is_default_enabled(v: &bool) -> bool { *v == true }
+fn default_runtime_config() -> WebhookRuntimeConfig {
+    WebhookRuntimeConfig {
+        n_par: 1,
+        timeout: 30,
+        retry: 3,
+    }
+}
+fn is_default_runtime_config(v: &WebhookRuntimeConfig) -> bool {
+    v.n_par == 1 && v.timeout == 30 && v.retry == 3
+}
+
+/// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[schema(title = "Config", description = "Application configuration")]
 pub struct Config {
     /// Server port
+    #[serde(default = "default_server_port", skip_serializing_if = "is_default_server_port")]
     pub server_port: u16,
     /// Template directory path (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub template_dir: Option<String>,
-    /// List of Feishu webhook configurations
-    pub feishu_webhooks: Vec<FeishuWebhookConfig>,
+    /// List of webhook configurations
+    #[serde(default = "default_webhooks", skip_serializing_if = "is_default_webhooks")]
+    pub webhooks: Vec<WebhookConfig>,
 }
 
+fn default_server_port() -> u16 { 7876 }
+fn is_default_server_port(v: &u16) -> bool { *v == 7876 }
+fn default_webhooks() -> Vec<WebhookConfig> { vec![] }
+fn is_default_webhooks(v: &Vec<WebhookConfig>) -> bool { v.is_empty() }
+
+/// Legacy Feishu Webhook Config (for backward compatibility)
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[schema(title = "Feishu Webhook Config", description = "Feishu webhook configuration")]
+#[schema(title = "Legacy Feishu Webhook Config", description = "Legacy Feishu webhook configuration")]
 pub struct FeishuWebhookConfig {
     /// Webhook name
     pub name: String,
@@ -187,9 +309,9 @@ pub struct FeishuWebhookConfig {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            server_port: 8080,
+            server_port: 7876,
             template_dir: None,
-            feishu_webhooks: vec![],
+            webhooks: vec![],
         }
     }
 }

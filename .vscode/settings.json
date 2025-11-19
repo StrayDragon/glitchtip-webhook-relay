@@ -1,3 +1,5 @@
 {
-    "explorer.excludeGitIgnore": true,
+    "files.exclude": {
+        "target/": true
+    }
 }

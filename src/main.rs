@@ -12,7 +12,7 @@ use utoipa_scalar::{Scalar, Servable};
 
 use config::LazyConfigManager;
 use routes::Routes;
-use service::{manage_config, receive_webhook};
+use service::{manage_config, receive_endpoint_webhook};
 use types::{ConfigResponse, GlitchTipSlackWebhook, WebhookResponse};
 
 #[derive(OpenApi)]
@@ -27,7 +27,7 @@ use types::{ConfigResponse, GlitchTipSlackWebhook, WebhookResponse};
         )
     ),
     paths(
-        crate::service::receive_webhook,
+        crate::service::receive_endpoint_webhook,
         crate::service::manage_config,
     ),
     components(
@@ -41,6 +41,14 @@ use types::{ConfigResponse, GlitchTipSlackWebhook, WebhookResponse};
             types::FeishuWebhook,
             types::FeishuWebhookConfig,
             types::FeishuWebhookInfo,
+            types::Config,
+            types::WebhookConfig,
+            types::ForwardConfig,
+            types::FeishuConfig,
+            types::WecomConfig,
+            types::DingtalkConfig,
+            types::WebhookRuntimeConfig,
+            types::Button,
         )
     ),
     tags(
@@ -52,19 +60,15 @@ struct ApiDoc;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Initialize logging
     env_logger::init();
 
-    // Create lazy config manager
     let config_manager = Arc::new(LazyConfigManager::new());
 
-    // Print example if requested
     if env::args().any(|arg| arg == "--example-config") {
         config::ConfigManager::save_example_config().unwrap();
         return Ok(());
     }
 
-    // Load config initially to get the port (this will be lazy-loaded)
     let config = match config_manager.get_config() {
         Ok(config) => config,
         Err(e) => {
@@ -76,8 +80,8 @@ async fn main() -> std::io::Result<()> {
     log::info!("Starting GlitchTip to Feishu Webhook Relay with lazy loading");
     log::info!("Server will listen on port {}", config.server_port);
     log::info!(
-        "Configured Feishu webhooks: {}",
-        config.feishu_webhooks.len()
+        "Configured webhooks: {}",
+        config.webhooks.len()
     );
 
     let port = config.server_port;
@@ -90,7 +94,10 @@ async fn main() -> std::io::Result<()> {
                 Routes::DEV_OPENAPI_UI,
                 ApiDoc::openapi(),
             ))
-            .route(Routes::WEBHOOK_GLITCHTIP, web::post().to(receive_webhook))
+            .service(
+                web::resource(Routes::ENDPOINT_WEBHOOK)
+                    .route(web::post().to(receive_endpoint_webhook))
+            )
             .route(Routes::INTERNAL_CONFIG_RELOAD, web::get().to(manage_config))
             .route(Routes::DEV_OPENAPI_JSON, web::get().to(openapi_json))
             .route(Routes::ROOT, web::get().to(root_info))
