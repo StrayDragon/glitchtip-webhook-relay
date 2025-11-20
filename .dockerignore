@@ -37,7 +37,8 @@ Thumbs.db
 # Build artifacts
 target/
 Cargo.lock
-artifacts/
+artifacts/*
+!artifacts/docker/crate_cn_mirror.toml
 
 # Test and coverage
 coverage/

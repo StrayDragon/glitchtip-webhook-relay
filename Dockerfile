@@ -4,15 +4,18 @@
 # =============================================================================
 
 # ============================
-# Build Stage - Alpine for musl compatibility
+# Build Stage - Debian for glibc compatibility
 # ============================
-FROM rust:1.91.1-alpine AS builder
+FROM rust:slim-trixie AS builder
+
+# Build argument for using Chinese mirror
+ARG USE_CN_MIRROR
 
 # Install build dependencies
-RUN apk add --no-cache \
-    pkgconfig \
-    openssl-dev \
-    musl-dev
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set environment for optimized build
 ENV CARGO_PROFILE_RELEASE_LTO=true
@@ -21,40 +24,50 @@ ENV CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 ENV CARGO_PROFILE_RELEASE_STRIP=true
 
 # Create non-root user
-RUN adduser -D -s /bin/sh -u 1000 appuser
+RUN useradd -m -s /bin/bash -u 1000 appuser
 
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files for better caching
+# Copy dependency files
 COPY Cargo.toml ./
 
-# Create dummy main.rs to cache dependencies
-RUN mkdir src && echo 'fn main() {}' > src/main.rs
+# Copy optional cargo mirror configuration
+COPY ./artifacts/docker/crate_cn_mirror.toml /tmp/crate_cn_mirror.toml
 
-# Build dependencies (cached layer)
-RUN cargo build --release
+# Create minimal src structure and fetch dependencies (cached layer)
+# Use Chinese mirror if USE_CN_MIRROR=1 is set
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && \
+    if [ "$USE_CN_MIRROR" = "1" ]; then \
+        mkdir -p ~/.cargo && \
+        cp /tmp/crate_cn_mirror.toml ~/.cargo/config.toml && \
+        echo "Using Chinese cargo mirror"; \
+    else \
+        echo "Using default cargo registry"; \
+    fi && \
+    cargo fetch
 
-# Remove dummy and copy actual source
-RUN rm -rf src
+# Copy actual source files (overwrites dummy)
 COPY src ./src
 COPY templates ./templates
+COPY config.example.yaml ./
 
 # Build the application
 RUN cargo build --release
 
 # ============================
-# Runtime Stage - Alpine Linux
+# Runtime Stage - Debian Slim
 # ============================
-FROM alpine:3.19
+FROM debian:trixie-slim
 
 # Install runtime dependencies only
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     ca-certificates \
-    openssl3
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN adduser -D -s /bin/sh -u 1000 appuser
+RUN useradd -m -s /bin/bash -u 1000 appuser
 
 # Set working directory
 WORKDIR /app
@@ -62,11 +75,14 @@ WORKDIR /app
 # Copy binary from builder stage
 COPY --from=builder /app/target/release/glitchtip-webhook-relay /usr/local/bin/glitchtip-webhook-relay
 
+# Set default log level (can be overridden)
+ENV RUST_LOG=info
+
 # Switch to non-root user
 USER appuser
 
-# Entry point
-ENTRYPOINT ["glitchtip-webhook-relay"]
+# Default command
+CMD ["glitchtip-webhook-relay"]
 
 # Expose port
 EXPOSE 7876
