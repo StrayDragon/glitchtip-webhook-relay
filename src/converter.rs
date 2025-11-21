@@ -103,7 +103,23 @@ impl Converter {
         // Extract issue identifier
         let issue_identifier = glitchtip.sections
             .first()
-            .map(|section| section.activity_subtitle.strip_prefix("View Issue ").unwrap_or(&section.activity_subtitle))
+            .and_then(|section| {
+                let subtitle = &section.activity_subtitle;
+                // Remove "View Issue " prefix first
+                let cleaned = subtitle.strip_prefix("View Issue ").unwrap_or(subtitle);
+
+                // Extract text from markdown link format [text](url)
+                if let Some(start) = cleaned.find('[') {
+                    if let Some(end) = cleaned.find(']') {
+                        if end > start {
+                            return Some(&cleaned[start + 1..end]);
+                        }
+                    }
+                }
+
+                // Fallback: if no markdown format, use cleaned text as-is
+                Some(cleaned)
+            })
             .unwrap_or("Unknown")
             .to_string();
 
