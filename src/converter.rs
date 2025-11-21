@@ -127,8 +127,16 @@ impl Converter {
 
         // Extract exception and error details
         let (exception_class_name, full_error_message, issue_url) = if let Some(attachment) = glitchtip.attachments.first() {
-            let exception_class = attachment.title.split(':').next().unwrap_or(&attachment.title).to_string();
-            let full_error = attachment.title.clone();
+            let title = &attachment.title;
+            let exception_class = title.split(':').next().unwrap_or(title).trim().to_string();
+
+            // Extract only the error message part (after the colon) for full_error_message
+            let full_error = if let Some(colon_pos) = title.find(':') {
+                title[colon_pos + 1..].trim().to_string()
+            } else {
+                title.clone()
+            };
+
             let url = attachment.title_link.clone();
             (exception_class, full_error, url)
         } else {
